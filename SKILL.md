@@ -1,3 +1,8 @@
+---
+name: permission-automation-testing
+description: Analyze and automate API permission testing for RBAC and similar authorization models. Use when testing authentication, role permissions, data permissions, IDOR, horizontal or vertical privilege escalation, parameter tampering, batch authorization, permission matrices, token management, or permission security risks.
+---
+
 # Permission Automation Testing Skill / 权限自动化测试技能
 
 > **Version / 版本:** v1.0.0
