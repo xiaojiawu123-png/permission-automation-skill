@@ -71,7 +71,7 @@ Copy the `permission-automation-skill/` directory into your project, or add it a
 将 `permission-automation-skill/` 目录复制到你的项目中，或添加为子模块：
 
 ```bash
-git submodule add https://github.com/your-org/permission-automation-skill.git .skill/permission-testing
+git submodule add https://github.com/xiaojiawu123-png/permission-automation-skill.git .skill/permission-testing
 ```
 
 ### 2. Invoke the AI Agent / 调用 AI 代理
@@ -111,6 +111,45 @@ mvn test -Dtest=PermissionTest
 
 # JavaScript/Jest example / 示例
 npx jest tests/permission/
+```
+
+---
+
+## Qoder Installation / Qoder 安装
+
+This repository is a **Qoder Skill**. It can be installed and used in the following ways:
+
+本仓库是一个 **Qoder Skill**。可以通过以下方式安装和使用：
+
+### Method 1: Upload via Qoder UI / 方式一：通过 Qoder 界面上传
+
+1. Open Qoder → go to **Skills** (技能) page / 打开 Qoder → 进入**技能**页面
+2. Click **Add Skill** (添加技能) → **Upload Skill** (上传 Skill) / 点击**添加技能** → **上传 Skill**
+3. Select the `permission-automation-skill-flat.zip` file (SKILL.md at root) / 选择 `permission-automation-skill-flat.zip` 文件（SKILL.md 在根目录）
+4. After installation, invoke by skill name: `permission-automation-testing` / 安装后通过技能名称调用：`permission-automation-testing`
+
+### Method 2: Copy to Project Skill Directory / 方式二：复制到项目 Skill 目录
+
+Copy the entire `permission-automation-skill/` directory into your project's Skill directory:
+
+将整个 `permission-automation-skill/` 目录复制到你的项目的 Skill 目录中：
+
+```bash
+cp -r permission-automation-skill/ <your-project>/.skill/permission-automation-testing/
+```
+
+Qoder will auto-discover the skill from the `SKILL.md` frontmatter.
+
+Qoder 会根据 `SKILL.md` 的 frontmatter 自动发现该技能。
+
+### Method 3: Direct Invocation / 方式三：直接调用
+
+In any Qoder conversation, reference the skill directly:
+
+在任意 Qoder 对话中直接引用：
+
+```
+Use the permission-automation-testing skill to analyze and test permissions in this project.
 ```
 
 ---

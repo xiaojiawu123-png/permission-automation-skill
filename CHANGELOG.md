@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.0.1] - 2026-09-02
+
+### Added / 新增
+
+- YAML frontmatter to `SKILL.md` for Qoder Skill recognition (`name: permission-automation-testing`) / 为 `SKILL.md` 添加 YAML frontmatter 以支持 Qoder Skill 识别
+- Qoder Installation section to `README.md` with 3 installation methods / `README.md` 新增 Qoder 安装章节，含 3 种安装方式
+
+### Fixed / 修复
+
+- `your-org` placeholder in README.md replaced with actual repo URL / README.md 中 `your-org` 占位符替换为实际仓库地址
+
+---
+
 ## [1.0.0] - 2026-09-02
 
 ### Added / 新增
