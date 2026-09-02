@@ -44,46 +44,66 @@ auth:
 # =============================================================================
 # Test Users
 # =============================================================================
-# Define one user per role. Add additional users for horizontal/cross-user tests.
+# Each user MUST have a unique "name" field — this is the token index key.
+# Tests reference users by name: client.get(path, user="alice")
 #
-# Required fields: username, password, role
+# Required fields: name, username, password, role
 # Optional fields: department, organization, description, extra (any custom fields)
 
 users:
 
-  # --- Example: Administrator ---
-  - username: "${ADMIN_USERNAME}"
+  # --- Administrator ---
+  - name: admin_user
+    username: "${ADMIN_USERNAME}"
     password: "${ADMIN_PASSWORD}"
     role: admin
     description: "System administrator with full access to all resources"
 
-  # --- Example: Manager ---
-  - username: "${MANAGER_USERNAME}"
+  # --- Manager ---
+  - name: manager_user
+    username: "${MANAGER_USERNAME}"
     password: "${MANAGER_PASSWORD}"
     role: manager
     department: department_a
     description: "Department manager with department-scoped data access"
 
-  # --- Example: Regular User (User A) ---
-  - username: "${USER_A_USERNAME}"
+  # --- Regular User A ---
+  - name: user_a
+    username: "${USER_A_USERNAME}"
     password: "${USER_A_PASSWORD}"
     role: user
     department: department_a
     description: "Regular user in department A (for self-scope tests)"
 
-  # --- Example: Regular User (User B — for cross-user tests) ---
-  - username: "${USER_B_USERNAME}"
+  # --- Regular User B (for horizontal privilege tests) ---
+  - name: user_b
+    username: "${USER_B_USERNAME}"
     password: "${USER_B_PASSWORD}"
     role: user
     department: department_b
     description: "Regular user in department B (for horizontal privilege tests)"
 
 # =============================================================================
+# Test Data References
+# =============================================================================
+# Define resource IDs and other test data here so tests don't hardcode them.
+# The test code reads these values at runtime.
+
+test_data:
+  # Resource IDs for IDOR and data scope tests
+  own_resource_id: "<own_resource_id>"
+  other_resource_id: "<other_user_resource_id>"
+  other_department_id: "<other_department_id>"
+
+# =============================================================================
 # Notes
 # =============================================================================
 #
-# 1. Passwords should use environment variable references (${VAR}), not plain text.
-# 2. Add a .env file (in .gitignore) with actual values:
+# 1. Each user MUST have a unique "name" — this is how tests identify who is acting.
+#    Multiple users can share the same "role" (e.g., user_a and user_b are both "user").
+#
+# 2. Passwords should use environment variable references (${VAR}), not plain text.
+#    Add a .env file (in .gitignore) with actual values:
 #    ADMIN_USERNAME=admin
 #    ADMIN_PASSWORD=secret123
 #    MANAGER_USERNAME=manager
@@ -99,7 +119,5 @@ users:
 # 4. The "department" and "organization" fields are used for data scope tests.
 #    Adapt the field names to match your system's data scope attributes.
 #
-# 5. The "extra" field can hold any custom attributes needed for your tests:
-#    extra:
-#      team: team_alpha
-#      clearance_level: 3
+# 5. The "test_data" section holds resource IDs and other references used in tests.
+#    Populate these with actual values from your test environment.

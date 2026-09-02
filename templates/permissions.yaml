@@ -1,7 +1,13 @@
-# permissions.yaml — Template
+# permissions.yaml — Template: System Permission Model
 # Copy this file to your project and adapt to your permission model.
 #
-# This file defines the permission model: resources, operations, and role mappings.
+# RESPONSIBILITY: This file defines the system's permission model:
+#   - What resources exist
+#   - What roles exist
+#   - Which roles have which permissions on which resources
+#   - What data scope applies to each role
+#
+# This is NOT the test scenario matrix — see permission_matrix.yaml for that.
 
 # =============================================================================
 # Resources

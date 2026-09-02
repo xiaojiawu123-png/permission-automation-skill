@@ -1,0 +1,18 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+allure-results/
+
+# OS
+.DS_Store
+Thumbs.db

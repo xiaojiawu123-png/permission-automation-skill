@@ -7,10 +7,10 @@ The AI agent should adapt this template to match the target project's technology
 stack, conventions, and existing infrastructure.
 
 If the target project uses:
-- Java/JUnit → generate JUnit test classes instead
-- JavaScript/Jest → generate Jest test files instead
-- Go → generate Go test files instead
-- Different HTTP client → use the project's existing client
+- Java/JUnit -> generate JUnit test classes instead
+- JavaScript/Jest -> generate Jest test files instead
+- Go -> generate Go test files instead
+- Different HTTP client -> use the project's existing client
 
 This template assumes:
 - Python 3.8+
@@ -53,6 +53,7 @@ matrix_config = load_yaml("permission_matrix.yaml")
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8080")
 AUTH_CONFIG = users_config["auth"]
+TEST_DATA = users_config.get("test_data", {})
 
 
 # =============================================================================
@@ -62,32 +63,39 @@ AUTH_CONFIG = users_config["auth"]
 
 class TokenManager:
     """
-    Manages authentication tokens for test roles.
+    Manages authentication tokens indexed by user name.
 
-    - Acquires tokens once per role at session start
-    - Caches tokens for reuse across all tests
-    - Handles token refresh on 401 responses
+    - Each user in users.yaml must have a unique "name" field.
+    - Tokens are acquired once per user and cached for the session.
+    - Use get_token(user="alice") to get Alice's token, regardless of her role.
+    - This allows multiple users with the same role to be distinguished
+      (e.g., alice and bob are both "employee" but need different tokens).
     """
 
     def __init__(self):
         self._tokens: dict[str, str] = {}
 
-    def get_token(self, role: str) -> str:
-        """Get a cached token for the given role, acquiring if necessary."""
-        if role not in self._tokens:
-            self._tokens[role] = self._acquire_token(role)
-        return self._tokens[role]
+    def get_token(self, user: str) -> str:
+        """Get a cached token for the given user name, acquiring if necessary."""
+        if user not in self._tokens:
+            self._tokens[user] = self._acquire_token(user)
+        return self._tokens[user]
 
-    def _acquire_token(self, role: str) -> str:
-        """Authenticate as a user with the given role and extract the token."""
-        user = self._find_user_by_role(role)
-        if not user:
-            pytest.skip(f"No user configured for role: {role}")
+    def get_user(self, user: str) -> dict:
+        """Get the full user config by name."""
+        for u in users_config["users"]:
+            if u["name"] == user:
+                return u
+        pytest.fail(f"No user configured with name: {user}")
+
+    def _acquire_token(self, user: str) -> str:
+        """Authenticate as the given user and extract the token."""
+        user_cfg = self.get_user(user)
 
         url = f"{BASE_URL}{AUTH_CONFIG['endpoint']}"
         body = {
-            AUTH_CONFIG["username_field"]: os.path.expandvars(user["username"]),
-            AUTH_CONFIG["password_field"]: os.path.expandvars(user["password"]),
+            AUTH_CONFIG["username_field"]: os.path.expandvars(user_cfg["username"]),
+            AUTH_CONFIG["password_field"]: os.path.expandvars(user_cfg["password"]),
         }
 
         response = requests.request(
@@ -99,15 +107,7 @@ class TokenManager:
         response.raise_for_status()
 
         data = response.json()
-        token = self._extract_nested(data, AUTH_CONFIG["token_field"])
-        return token
-
-    def _find_user_by_role(self, role: str) -> dict | None:
-        """Find the first user configured for the given role."""
-        for user in users_config["users"]:
-            if user["role"] == role:
-                return user
-        return None
+        return self._extract_nested(data, AUTH_CONFIG["token_field"])
 
     @staticmethod
     def _extract_nested(data: dict, path: str) -> str:
@@ -131,19 +131,47 @@ class PermissionTestClient:
     """
     HTTP client for permission testing.
 
-    - Injects the correct token for the specified role
-    - Supports all HTTP methods
-    - Can send requests without authentication (for auth tests)
+    - Requests are authenticated by user name: client.get(path, user="alice")
+    - Supports unauthenticated requests via no_auth=True
+    - Supports token overrides for auth edge-case tests
+    - Bearer prefix is handled correctly: if the token already starts with
+      the configured prefix, it won't be added again.
     """
 
     def __init__(self, token_manager: TokenManager):
-        self.token_manager = token_manager
+        self.tm = token_manager
+
+    def _build_headers(
+        self,
+        user: str | None = None,
+        no_auth: bool = False,
+        token_override: str | None = None,
+    ) -> dict:
+        """Build authentication headers."""
+        if no_auth:
+            return {}
+
+        header_name = AUTH_CONFIG.get("token_header_name", "Authorization")
+        header_prefix = AUTH_CONFIG.get("token_header_prefix", "Bearer")
+
+        if token_override is not None:
+            token = token_override
+        elif user:
+            token = self.tm.get_token(user)
+        else:
+            return {}
+
+        # Avoid double-prefix: "Bearer Bearer xxx"
+        if header_prefix and token.startswith(f"{header_prefix} "):
+            return {header_name: token}
+
+        return {header_name: f"{header_prefix} {token}"}
 
     def request(
         self,
         method: str,
         path: str,
-        role: str | None = None,
+        user: str | None = None,
         json: dict | None = None,
         params: dict | None = None,
         no_auth: bool = False,
@@ -151,13 +179,7 @@ class PermissionTestClient:
     ) -> requests.Response:
         """Send an HTTP request with the appropriate authentication."""
         url = f"{BASE_URL}{path}"
-        headers = {}
-
-        if not no_auth:
-            token = token_override or self.token_manager.get_token(role)
-            header_name = AUTH_CONFIG.get("token_header_name", "Authorization")
-            header_prefix = AUTH_CONFIG.get("token_header_prefix", "Bearer")
-            headers[header_name] = f"{header_prefix} {token}"
+        headers = self._build_headers(user=user, no_auth=no_auth, token_override=token_override)
 
         return requests.request(
             method=method,
@@ -167,17 +189,17 @@ class PermissionTestClient:
             params=params,
         )
 
-    def get(self, path, role=None, **kwargs):
-        return self.request("GET", path, role=role, **kwargs)
+    def get(self, path, user=None, **kwargs):
+        return self.request("GET", path, user=user, **kwargs)
 
-    def post(self, path, role=None, json=None, **kwargs):
-        return self.request("POST", path, role=role, json=json, **kwargs)
+    def post(self, path, user=None, json=None, **kwargs):
+        return self.request("POST", path, user=user, json=json, **kwargs)
 
-    def put(self, path, role=None, json=None, **kwargs):
-        return self.request("PUT", path, role=role, json=json, **kwargs)
+    def put(self, path, user=None, json=None, **kwargs):
+        return self.request("PUT", path, user=user, json=json, **kwargs)
 
-    def delete(self, path, role=None, **kwargs):
-        return self.request("DELETE", path, role=role, **kwargs)
+    def delete(self, path, user=None, **kwargs):
+        return self.request("DELETE", path, user=user, **kwargs)
 
 
 # =============================================================================
@@ -200,16 +222,14 @@ def client(token_manager):
 
 
 # =============================================================================
-# Test Data
+# Test Data Helpers
 # =============================================================================
-# The following variables should be populated from your YAML configuration.
-# They are shown here as examples — the AI should generate actual values
-# based on the target project's permission_matrix.yaml.
+# Load test data references from users.yaml so tests don't hardcode IDs.
+# Adapt these to match your project's test_data structure.
 
-# Example resource IDs for testing (replace with actual test data setup)
-OWN_RESOURCE_ID = "<own_resource_id>"
-OTHER_RESOURCE_ID = "<other_user_resource_id>"
-OTHER_DEPARTMENT_ID = "<other_department_id>"
+# Example:
+# OWN_RESOURCE_ID = TEST_DATA.get("own_resource_id", "<own_resource_id>")
+# OTHER_RESOURCE_ID = TEST_DATA.get("other_resource_id", "<other_resource_id>")
 
 
 # =============================================================================
@@ -253,32 +273,32 @@ class TestRolePermission:
     # --- Positive tests (should allow) ---
 
     def test_admin_can_query(self, client):
-        response = client.get("/api/<resources>", role="admin")
+        response = client.get("/api/<resources>", user="admin_user")
         assert response.status_code == 200
 
     def test_admin_can_create(self, client):
-        response = client.post("/api/<resources>", role="admin", json={})
+        response = client.post("/api/<resources>", user="admin_user", json={})
         assert response.status_code in (200, 201)
 
     def test_manager_can_query(self, client):
-        response = client.get("/api/<resources>", role="manager")
+        response = client.get("/api/<resources>", user="manager_user")
         assert response.status_code == 200
 
     # --- Negative tests (should deny) ---
 
     def test_manager_cannot_delete(self, client):
         """Manager should not be able to delete — admin-only operation."""
-        response = client.delete(f"/api/<resources>/{OWN_RESOURCE_ID}", role="manager")
+        response = client.delete(f"/api/<resources>/<own_resource_id>", user="manager_user")
         assert response.status_code == 403
 
     def test_user_cannot_create(self, client):
         """Regular user should not be able to create resources."""
-        response = client.post("/api/<resources>", role="user", json={})
+        response = client.post("/api/<resources>", user="user_a", json={})
         assert response.status_code == 403
 
     def test_user_cannot_delete(self, client):
         """Regular user should not be able to delete resources."""
-        response = client.delete(f"/api/<resources>/{OWN_RESOURCE_ID}", role="user")
+        response = client.delete(f"/api/<resources>/<own_resource_id>", user="user_a")
         assert response.status_code == 403
 
 
@@ -292,25 +312,25 @@ class TestDataPermission:
 
     def test_manager_can_access_own_department_data(self, client):
         """Manager should access data within their department."""
-        response = client.get(f"/api/<resources>/{OWN_RESOURCE_ID}", role="manager")
+        response = client.get(f"/api/<resources>/<own_resource_id>", user="manager_user")
         assert response.status_code == 200
 
     def test_manager_cannot_access_other_department_data(self, client):
         """Manager should NOT access data from another department."""
         response = client.get(
-            f"/api/<resources>?departmentId={OTHER_DEPARTMENT_ID}",
-            role="manager",
+            f"/api/<resources>?departmentId=<other_department_id>",
+            user="manager_user",
         )
         assert response.status_code == 403 or response.json().get("data") == []
 
     def test_user_can_access_own_data(self, client):
         """User should access their own data."""
-        response = client.get(f"/api/<resources>/{OWN_RESOURCE_ID}", role="user")
+        response = client.get(f"/api/<resources>/<own_resource_id>", user="user_a")
         assert response.status_code == 200
 
     def test_user_cannot_access_other_user_data(self, client):
         """User should NOT access another user's data."""
-        response = client.get(f"/api/<resources>/{OTHER_RESOURCE_ID}", role="user")
+        response = client.get(f"/api/<resources>/<other_resource_id>", user="user_a")
         assert response.status_code == 403
 
 
@@ -324,14 +344,14 @@ class TestHorizontalEscalation:
 
     def test_user_cannot_access_other_user_resource_by_path(self, client):
         """IDOR: User A should not access User B's resource via path parameter."""
-        response = client.get(f"/api/<resources>/{OTHER_RESOURCE_ID}", role="user")
+        response = client.get(f"/api/<resources>/<other_resource_id>", user="user_a")
         assert response.status_code == 403
 
     def test_user_cannot_modify_other_user_resource(self, client):
         """IDOR: User A should not modify User B's resource."""
         response = client.put(
-            f"/api/<resources>/{OTHER_RESOURCE_ID}",
-            role="user",
+            f"/api/<resources>/<other_resource_id>",
+            user="user_a",
             json={"name": "tampered"},
         )
         assert response.status_code == 403
@@ -347,12 +367,12 @@ class TestVerticalEscalation:
 
     def test_user_cannot_perform_admin_delete(self, client):
         """Regular user should not be able to delete (admin-only)."""
-        response = client.delete(f"/api/<resources>/{OWN_RESOURCE_ID}", role="user")
+        response = client.delete(f"/api/<resources>/<own_resource_id>", user="user_a")
         assert response.status_code == 403
 
     def test_manager_cannot_perform_admin_delete(self, client):
         """Manager should not be able to delete (admin-only)."""
-        response = client.delete(f"/api/<resources>/{OWN_RESOURCE_ID}", role="manager")
+        response = client.delete(f"/api/<resources>/<own_resource_id>", user="manager_user")
         assert response.status_code == 403
 
 
@@ -368,7 +388,7 @@ class TestParameterTampering:
         """Injecting another user's ownerId should not grant access."""
         response = client.post(
             "/api/<resources>",
-            role="user",
+            user="user_a",
             json={"name": "test", "ownerId": "<another_user_id>"},
         )
         assert response.status_code in (403, 200)
@@ -381,8 +401,8 @@ class TestParameterTampering:
     def test_department_id_injection(self, client):
         """Injecting another department's departmentId should not grant access."""
         response = client.get(
-            f"/api/<resources>?departmentId={OTHER_DEPARTMENT_ID}",
-            role="manager",
+            f"/api/<resources>?departmentId=<other_department_id>",
+            user="manager_user",
         )
         assert response.status_code == 403 or response.json().get("data") == []
 
@@ -390,7 +410,7 @@ class TestParameterTampering:
         """Injecting role field in update request should not elevate privileges."""
         response = client.put(
             "/api/users/<self_id>",
-            role="user",
+            user="user_a",
             json={"role": "admin"},
         )
         assert response.status_code in (403, 200)
@@ -413,14 +433,14 @@ class TestBatchAuthorization:
         """Batch request should not return unauthorized resources."""
         response = client.post(
             "/api/<resources>/batch",
-            role="user",
-            json={"ids": [OWN_RESOURCE_ID, OTHER_RESOURCE_ID]},
+            user="user_a",
+            json={"ids": ["<own_resource_id>", "<other_resource_id>"]},
         )
         assert response.status_code in (200, 403)
         if response.status_code == 200:
             body = response.json()
             returned_ids = [item.get("id") for item in body.get("data", [])]
-            assert OTHER_RESOURCE_ID not in returned_ids, (
+            assert "<other_resource_id>" not in returned_ids, (
                 "Batch response included unauthorized resource — batch authorization bypass"
             )
 
