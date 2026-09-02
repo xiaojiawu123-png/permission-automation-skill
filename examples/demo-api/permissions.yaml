@@ -1,6 +1,12 @@
-# permissions.yaml — Demo: Employee Management API
+# permissions.yaml — Demo: System Permission Model
 #
 # This is a FICTIONAL example.
+#
+# RESPONSIBILITY: Defines the permission model for the demo API:
+#   - Resources, roles, and role-permission mappings
+#   - Data scope per role (all, department, self)
+#
+# For test scenarios, see permission_matrix.yaml.
 
 resources:
   - name: employee

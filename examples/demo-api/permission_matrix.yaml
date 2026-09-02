@@ -1,7 +1,10 @@
-# permission_matrix.yaml — Demo: Employee Management API
+# permission_matrix.yaml — Demo: Test Scenario Matrix
 #
 # This is a FICTIONAL example.
 # Each entry maps to one or more test cases.
+#
+# RESPONSIBILITY: Defines testable permission scenarios.
+#   References users from users.yaml and resources from permissions.yaml.
 
 matrix:
 
@@ -31,7 +34,7 @@ matrix:
 
   - category: authentication
     description: "No token — get single employee"
-    api: GET /api/employees/101
+    api: GET /api/employees/{employee_id}
     expected: deny
     expected_status: 401
 
@@ -43,7 +46,7 @@ matrix:
 
   - category: authentication
     description: "No token — delete employee"
-    api: DELETE /api/employees/101
+    api: DELETE /api/employees/{employee_id}
     expected: deny
     expected_status: 401
 
@@ -62,7 +65,7 @@ matrix:
     role: admin
     resource: employee
     operation: query
-    api: GET /api/employees/101
+    api: GET /api/employees/{employee_id}
     expected: allow
 
   - category: role_permission
@@ -76,14 +79,14 @@ matrix:
     role: admin
     resource: employee
     operation: update
-    api: PUT /api/employees/101
+    api: PUT /api/employees/{employee_id}
     expected: allow
 
   - category: role_permission
     role: admin
     resource: employee
     operation: delete
-    api: DELETE /api/employees/102
+    api: DELETE /api/employees/{employee_id}
     expected: allow
 
   # ===========================================================================
@@ -109,7 +112,7 @@ matrix:
     role: manager
     resource: employee
     operation: update
-    api: PUT /api/employees/101
+    api: PUT /api/employees/{employee_id}
     expected: allow
     data_scope: department
 
@@ -121,7 +124,7 @@ matrix:
     role: manager
     resource: employee
     operation: delete
-    api: DELETE /api/employees/101
+    api: DELETE /api/employees/{employee_id}
     expected: deny
     expected_status: 403
 
@@ -149,7 +152,7 @@ matrix:
     role: employee
     resource: employee
     operation: delete
-    api: DELETE /api/employees/101
+    api: DELETE /api/employees/{employee_id}
     expected: deny
     expected_status: 403
 
@@ -161,19 +164,19 @@ matrix:
     role: employee
     resource: employee
     operation: self.query
-    api: GET /api/employees/101
+    api: GET /api/employees/{own_employee_id}
     expected: allow
     data_scope: self
-    condition: "employee_id == current_user.employee_id (Alice accessing own record 101)"
+    condition: "employee_id == current_user.employee_id"
 
   - category: role_permission
     role: employee
     resource: employee
     operation: self.update
-    api: PUT /api/employees/101
+    api: PUT /api/employees/{own_employee_id}
     expected: allow
     data_scope: self
-    condition: "employee_id == current_user.employee_id (Alice updating own record 101)"
+    condition: "employee_id == current_user.employee_id"
 
   # ===========================================================================
   # Data Permission Tests
@@ -182,24 +185,27 @@ matrix:
   - category: data_permission
     description: "Manager A (Engineering) can access Engineering employee"
     role: manager
-    api: GET /api/employees/101
+    actor: manager_a
+    api: GET /api/employees/{same_dept_employee_id}
     data_scope: department
-    condition: "target.department == manager.department (both dept-1)"
+    condition: "target.department == manager.department"
     expected: allow
 
   - category: data_permission
     description: "Manager A (Engineering) CANNOT access Marketing employee"
     role: manager
-    api: GET /api/employees/201
+    actor: manager_a
+    api: GET /api/employees/{other_dept_employee_id}
     data_scope: department
-    condition: "target.department != manager.department (dept-1 vs dept-2)"
+    condition: "target.department != manager.department"
     expected: deny
     expected_status: 403
 
   - category: data_permission
     description: "Manager A (Engineering) CANNOT list Marketing department employees"
     role: manager
-    api: GET /api/departments/dept-2/employees
+    actor: manager_a
+    api: GET /api/departments/{other_department_id}/employees
     data_scope: department
     expected: deny
     expected_status: 403
@@ -207,9 +213,10 @@ matrix:
   - category: data_permission
     description: "Manager B (Marketing) CANNOT access Engineering employee"
     role: manager
-    api: GET /api/employees/101
+    actor: manager_b
+    api: GET /api/employees/{other_dept_employee_id}
     data_scope: department
-    condition: "target.department != manager.department (dept-2 vs dept-1)"
+    condition: "target.department != manager.department"
     expected: deny
     expected_status: 403
 
@@ -218,38 +225,38 @@ matrix:
   # ===========================================================================
 
   - category: horizontal_escalation
-    description: "Alice (101) CANNOT access Bob's record (102) — same department"
+    description: "Alice CANNOT access Bob's record — same department"
     role: employee
-    api: GET /api/employees/102
-    actor: emp_alice (employee_id: 101)
-    target: emp_bob (employee_id: 102)
+    actor: alice
+    target: bob
+    api: GET /api/employees/{other_employee_id}
     expected: deny
     expected_status: 403
 
   - category: horizontal_escalation
-    description: "Alice (101) CANNOT update Bob's record (102)"
+    description: "Alice CANNOT update Bob's record"
     role: employee
-    api: PUT /api/employees/102
-    actor: emp_alice (employee_id: 101)
-    target: emp_bob (employee_id: 102)
+    actor: alice
+    target: bob
+    api: PUT /api/employees/{other_employee_id}
     expected: deny
     expected_status: 403
 
   - category: horizontal_escalation
-    description: "Alice (101) CANNOT access Charlie's record (201) — different department"
+    description: "Alice CANNOT access Charlie's record — different department"
     role: employee
-    api: GET /api/employees/201
-    actor: emp_alice (employee_id: 101)
-    target: emp_charlie (employee_id: 201)
+    actor: alice
+    target: charlie
+    api: GET /api/employees/{other_employee_id}
     expected: deny
     expected_status: 403
 
   - category: horizontal_escalation
-    description: "Alice (101) CANNOT delete Bob's record (102)"
+    description: "Alice CANNOT delete Bob's record"
     role: employee
-    api: DELETE /api/employees/102
-    actor: emp_alice (employee_id: 101)
-    target: emp_bob (employee_id: 102)
+    actor: alice
+    target: bob
+    api: DELETE /api/employees/{other_employee_id}
     expected: deny
     expected_status: 403
 
@@ -260,14 +267,14 @@ matrix:
   - category: vertical_escalation
     description: "Employee cannot perform admin delete"
     role: employee
-    api: DELETE /api/employees/101
+    api: DELETE /api/employees/{employee_id}
     expected: deny
     expected_status: 403
 
   - category: vertical_escalation
     description: "Manager cannot perform admin delete"
     role: manager
-    api: DELETE /api/employees/101
+    api: DELETE /api/employees/{employee_id}
     expected: deny
     expected_status: 403
 
@@ -292,18 +299,18 @@ matrix:
   - category: parameter_tampering
     description: "Employee tampers departmentId in self-update"
     role: employee
-    api: PUT /api/employees/101
-    actor: emp_alice
+    actor: alice
+    api: PUT /api/employees/{own_employee_id}
     tampered_fields:
-      departmentId: dept-2
+      departmentId: "{other_department_id}"
     expected: deny
     expected_behavior: "departmentId should be ignored or request rejected"
 
   - category: parameter_tampering
     description: "Employee tampers role in self-update"
     role: employee
-    api: PUT /api/employees/101
-    actor: emp_alice
+    actor: alice
+    api: PUT /api/employees/{own_employee_id}
     tampered_fields:
       role: admin
     expected: deny
@@ -312,8 +319,8 @@ matrix:
   - category: parameter_tampering
     description: "Employee tampers employeeId in create to impersonate"
     role: employee
+    actor: alice
     api: POST /api/employees
-    actor: emp_alice
     tampered_fields:
       employeeId: 999
       role: manager
@@ -323,10 +330,10 @@ matrix:
   - category: parameter_tampering
     description: "Manager tampers departmentId to access other department"
     role: manager
-    api: GET /api/employees?departmentId=dept-2
-    actor: manager_dept_a
+    actor: manager_a
+    api: GET /api/employees?departmentId={other_department_id}
     expected: deny
-    expected_behavior: "should return empty or 403, not dept-2 data"
+    expected_behavior: "should return empty or 403, not other department data"
 
   # ===========================================================================
   # Batch Authorization Tests
@@ -335,29 +342,29 @@ matrix:
   - category: batch_authorization
     description: "Employee batch query with own ID + other's ID"
     role: employee
+    actor: alice
     api: POST /api/employees/batch
-    actor: emp_alice (101)
     request_body:
-      ids: [101, 102]
+      ids: ["{own_employee_id}", "{other_employee_id}"]
     expected: allow
-    expected_behavior: "Only employee 101 data should be returned, not 102"
+    expected_behavior: "Only own employee data should be returned"
 
   - category: batch_authorization
     description: "Employee batch query with all unauthorized IDs"
     role: employee
+    actor: alice
     api: POST /api/employees/batch
-    actor: emp_alice (101)
     request_body:
-      ids: [102, 201]
+      ids: ["{other_employee_id}", "{other_dept_employee_id}"]
     expected: deny
     expected_behavior: "No data should be returned, or 403"
 
   - category: batch_authorization
     description: "Manager batch query with own-dept + other-dept IDs"
     role: manager
+    actor: manager_a
     api: POST /api/employees/batch
-    actor: manager_dept_a (dept-1)
     request_body:
-      ids: [101, 201]
+      ids: ["{same_dept_employee_id}", "{other_dept_employee_id}"]
     expected: allow
-    expected_behavior: "Only dept-1 employee (101) data should be returned, not dept-2 (201)"
+    expected_behavior: "Only own-department employee data should be returned"

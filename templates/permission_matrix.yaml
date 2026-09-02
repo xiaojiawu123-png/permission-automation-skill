@@ -1,8 +1,14 @@
-# permission_matrix.yaml — Template
+# permission_matrix.yaml — Template: Test Scenario Matrix
 # Copy this file to your project and fill in your actual permission matrix.
 #
-# This file is the central input for test generation.
-# Each entry represents one testable permission boundary.
+# RESPONSIBILITY: This file defines testable permission scenarios.
+#   - Each entry maps to one or more test cases.
+#   - Categories: authentication, role_permission, data_permission,
+#     horizontal_escalation, vertical_escalation, parameter_tampering,
+#     batch_authorization
+#   - References roles, users, and resources from permissions.yaml and users.yaml.
+#
+# This is NOT the permission model — see permissions.yaml for that.
 
 # =============================================================================
 # Permission Matrix

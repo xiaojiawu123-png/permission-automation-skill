@@ -1,137 +1,152 @@
-# Permission Automation Testing Skill
+# Permission Automation Testing Skill / 权限自动化测试技能
 
-A technology-agnostic, reusable AI skill for automated permission testing — from permission model analysis to security risk reporting.
+> **Version / 版本:** v1.0.0
+>
+> A technology-agnostic, reusable AI skill for automated permission testing — from permission model analysis to security risk reporting.
+>
+> 一个技术无关的、可复用的 AI 技能，用于自动化权限测试——从权限模型分析到安全风险报告。
 
-## What This Solves
+---
+
+## What This Solves / 解决什么问题
 
 Permission vulnerabilities (privilege escalation, IDOR, data leakage, missing auth checks) are among the most critical security issues in any application. They are rarely caught by functional tests because the system "works" — it just works insecurely.
 
-This skill gives AI agents a **standardized methodology** to:
+权限漏洞（权限提升、IDOR、数据泄露、缺少认证检查）是任何应用中最关键的安全问题之一。功能测试很少能发现这些问题，因为系统"能工作"——只是工作得不安全。
 
-1. Analyze any project's permission model
-2. Build a complete permission matrix
-3. Generate and execute permission test suites
-4. Detect privilege escalation vulnerabilities
-5. Produce a security risk report
+This skill gives AI agents a **standardized methodology** to / 本技能为 AI 代理提供**标准化方法论**：
 
-## Supported Test Categories
+1. Analyze any project's permission model / 分析任何项目的权限模型
+2. Build a complete permission matrix / 构建完整的权限矩阵
+3. Generate and execute permission test suites / 生成并执行权限测试套件
+4. Detect privilege escalation vulnerabilities / 检测权限提升漏洞
+5. Produce a security risk report / 生成安全风险报告
 
-| Category | What It Tests |
+---
+
+## Supported Test Categories / 支持的测试类别
+
+| Category / 类别 | What It Tests / 测试内容 |
 |---|---|
-| **Authentication** | Missing tokens, invalid tokens, expired tokens |
-| **Role Permission** | Each role can only do what it's authorized for |
-| **API Permission** | APIs enforce permissions regardless of frontend |
-| **Menu Permission** | Hidden menus don't expose underlying APIs |
-| **Data Permission** | Users only see data within their scope |
-| **Vertical Privilege Escalation** | Lower roles can't perform admin operations |
-| **Horizontal Privilege Escalation** | Users can't access other users' resources (IDOR) |
-| **Parameter Tampering** | Modifying IDs/roles/scopes doesn't bypass permissions |
-| **Batch Authorization** | Batch operations enforce per-item checks |
+| **Authentication / 认证** | Missing tokens, invalid tokens, expired tokens / 缺少令牌、无效令牌、过期令牌 |
+| **Role Permission / 角色权限** | Each role can only do what it's authorized for / 每个角色只能执行其被授权的操作 |
+| **Data Permission / 数据权限** | Users only see data within their scope / 用户只能看到其范围内的数据 |
+| **Vertical Privilege Escalation / 垂直权限提升** | Lower roles can't perform admin operations / 低角色不能执行管理员操作 |
+| **Horizontal Privilege Escalation / 水平权限提升** | Users can't access other users' resources (IDOR) / 用户不能访问其他用户的资源（IDOR） |
+| **Parameter Tampering / 参数篡改** | Modifying IDs/roles/scopes doesn't bypass permissions / 修改ID/角色/范围不能绕过权限 |
+| **Batch Authorization / 批量授权** | Batch operations enforce per-item checks / 批量操作执行逐项检查 |
 
-## Technology Agnostic
+---
 
-This skill does not assume any specific technology. The AI agent:
+## Technology Agnostic / 技术无关
 
-1. Scans the target project
-2. Identifies the language, framework, test framework, and HTTP client
-3. Generates test code matching the project's stack
+This skill does not assume any specific technology. The AI agent / 本技能不假设任何特定技术。AI 代理会：
 
-| If the project uses | The AI generates |
+1. Scans the target project / 扫描目标项目
+2. Identifies the language, framework, test framework, and HTTP client / 识别语言、框架、测试框架和 HTTP 客户端
+3. Generates test code matching the project's stack / 生成匹配项目技术栈的测试代码
+
+| If the project uses / 如果项目使用 | The AI generates / AI 生成 |
 |---|---|
-| Python + pytest | pytest test files with requests |
-| Java + JUnit | JUnit test classes with RestAssured |
-| JavaScript + Jest | Jest test files with axios/fetch |
-| Go + testing | Go test files with net/http |
-| Something else | Adapts accordingly |
+| Python + pytest | pytest test files with requests / pytest 测试文件 + requests |
+| Java + JUnit | JUnit test classes with RestAssured / JUnit 测试类 + RestAssured |
+| JavaScript + Jest | Jest test files with axios/fetch / Jest 测试文件 + axios/fetch |
+| Go + testing | Go test files with net/http / Go 测试文件 + net/http |
+| Something else / 其他 | Adapts accordingly / 相应适配 |
 
-## Quick Start
+---
 
-### 1. Add to Your Project
+## Quick Start / 快速开始
+
+### Prerequisites / 前提条件
+
+- A project with API endpoints and permission controls / 一个有 API 端点和权限控制的项目
+- A running target API environment (dev/staging) with test accounts / 运行中的目标 API 环境（开发/预发布）及测试账户
+- An AI agent that supports Skill execution (e.g., Qoder, Cursor, Copilot) / 支持 Skill 执行的 AI 代理
+
+### 1. Add to Your Project / 添加到你的项目
 
 Copy the `permission-automation-skill/` directory into your project, or add it as a submodule:
+
+将 `permission-automation-skill/` 目录复制到你的项目中，或添加为子模块：
 
 ```bash
 git submodule add https://github.com/your-org/permission-automation-skill.git .skill/permission-testing
 ```
 
-### 2. Invoke the AI Agent
+### 2. Invoke the AI Agent / 调用 AI 代理
 
-Use this prompt with your AI agent (Qoder, Cursor, Copilot, etc.):
+Use this prompt with your AI agent / 使用以下提示与你的 AI 代理：
 
 ```
-Use the Permission Automation Testing Skill to analyze and test permissions in this project.
+Use the Permission Automation Testing Skill (v1.0.0) to analyze and test permissions in this project.
 
-Please:
-1. Analyze the current project structure and technology stack
-2. Identify the authentication mechanism and token acquisition method
-3. Discover all users and roles
-4. Discover all permissions
-5. Discover all APIs requiring permission protection
-6. Identify data permission rules
-7. Build a complete permission matrix
-8. Generate permission test scenarios
-9. Generate executable test code
-10. Execute tests
-11. Analyze failures
-12. Output a permission security risk report
+Please follow the 12-phase execution flow defined in SKILL.md.
 ```
 
 The AI will follow the 12-phase execution flow defined in `SKILL.md`.
 
-### 3. Provide Configuration
+AI 将遵循 `SKILL.md` 中定义的12阶段执行流程。
 
-The AI will ask you to fill in (or will discover automatically):
+### 3. Provide Configuration / 提供配置
 
-- `users.yaml` — test accounts for each role
-- `permissions.yaml` — your permission model
-- `permission_matrix.yaml` — expected role x API permissions
+The AI will ask you to fill in (or will discover automatically) / AI 会要求你填写（或自动发现）：
+
+- `users.yaml` — test accounts for each role (each user has a unique `name`) / 每个角色的测试账户（每个用户有唯一 `name`）
+- `permissions.yaml` — your permission model (resources, roles, mappings) / 你的权限模型
+- `permission_matrix.yaml` — test scenarios (expected role x API permissions) / 测试场景
 
 Templates are in `templates/`. Copy them to your project and adapt.
 
-### 4. Run Tests
+模板在 `templates/` 中。复制到你的项目并适配。
+
+### 4. Run Tests / 运行测试
 
 ```bash
-# Python/pytest example
+# Python/pytest example / 示例
 pytest tests/permission/ -v
 
-# Java/JUnit example
+# Java/JUnit example / 示例
 mvn test -Dtest=PermissionTest
 
-# JavaScript/Jest example
+# JavaScript/Jest example / 示例
 npx jest tests/permission/
 ```
 
-## Project Structure
+---
+
+## Project Structure / 项目结构
 
 ```
 permission-automation-skill/
-├── SKILL.md                    # Core skill: 12-phase execution flow
-├── README.md                   # This file
-├── LICENSE                     # MIT License
+├── SKILL.md                    # Core skill spec: 12-phase execution flow / 核心技能规范
+├── README.md                   # This file / 本文件
+├── CHANGELOG.md                # Version history / 版本历史
+├── LICENSE                     # MIT License / MIT 许可证
 │
-├── docs/                       # Strategy and theory
-│   ├── architecture.md         # Skill architecture
-│   ├── permission-model.md     # Permission model theory
-│   ├── test-strategy.md        # Testing strategy
-│   ├── token-strategy.md       # Token management
-│   └── configuration.md        # Configuration reference
+├── docs/                       # Strategy and theory / 策略和理论
+│   ├── architecture.md         # Skill architecture / 技能架构
+│   ├── permission-model.md     # Permission model theory / 权限模型理论
+│   ├── test-strategy.md        # Testing strategy / 测试策略
+│   ├── token-strategy.md       # Token management / 令牌管理
+│   └── configuration.md        # Configuration reference / 配置参考
 │
-├── rules/                      # Testing rules per category
-│   ├── authentication.md       # Authentication testing rules
-│   ├── role.md                 # Role permission rules
-│   ├── menu.md                 # Menu permission rules
-│   ├── api.md                  # API permission rules
-│   ├── data.md                 # Data permission rules
-│   └── privilege-escalation.md # Privilege escalation rules
+├── rules/                      # Testing rules per category / 每个类别的测试规则
+│   ├── authentication.md       # Authentication testing rules / 认证测试规则
+│   ├── role.md                 # Role permission rules / 角色权限规则
+│   ├── menu.md                 # Menu permission rules / 菜单权限规则
+│   ├── api.md                  # API permission rules / API权限规则
+│   ├── data.md                 # Data permission rules / 数据权限规则
+│   └── privilege-escalation.md # Privilege escalation rules / 权限提升规则
 │
-├── templates/                  # Copy-and-adapt templates
-│   ├── users.yaml              # Test user configuration
-│   ├── permissions.yaml        # Permission model definition
-│   ├── permission_matrix.yaml  # Permission matrix template
-│   └── permission_test.py      # Reference test implementation
+├── templates/                  # Copy-and-adapt templates / 可复用模板
+│   ├── users.yaml              # Test user configuration / 测试用户配置
+│   ├── permissions.yaml        # System permission model / 系统权限模型
+│   ├── permission_matrix.yaml  # Test scenario matrix / 测试场景矩阵
+│   └── permission_test.py      # Reference test implementation / 参考测试实现
 │
 └── examples/
-    └── demo-api/               # Fictional Employee Management API demo
+    └── demo-api/               # Fictional Employee Management API demo / 虚构员工管理API示例
         ├── README.md
         ├── users.yaml
         ├── permissions.yaml
@@ -140,11 +155,19 @@ permission-automation-skill/
             └── test_permission.py
 ```
 
-## Configuration
+---
 
-### users.yaml
+## Configuration Files / 配置文件
 
-Defines test accounts and how to authenticate:
+### File Responsibilities / 文件职责
+
+| File / 文件 | Responsibility / 职责 |
+|---|---|
+| `permissions.yaml` | System permission model: resources, roles, role-permission mappings / 系统权限模型：资源、角色、角色-权限映射 |
+| `permission_matrix.yaml` | Test scenario matrix: testable expectations per category / 测试场景矩阵：每个类别的可测试预期 |
+| `users.yaml` | Test accounts, auth config, test data references / 测试账户、认证配置、测试数据引用 |
+
+### users.yaml Example / 示例
 
 ```yaml
 auth:
@@ -159,96 +182,100 @@ auth:
   token_header_prefix: "Bearer"
 
 users:
-  - username: "${ADMIN_USERNAME}"
+  - name: admin_user          # unique name — used as token index / 唯一名称——用作令牌索引
+    username: "${ADMIN_USERNAME}"
     password: "${ADMIN_PASSWORD}"
     role: admin
-  - username: "${USER_USERNAME}"
-    password: "${USER_PASSWORD}"
+  - name: alice
+    username: "${ALICE_USERNAME}"
+    password: "${ALICE_PASSWORD}"
     role: user
+    department: engineering
 ```
 
-### Environment Variables
+### Environment Variables / 环境变量
 
 ```bash
-# .env (add to .gitignore)
+# .env (add to .gitignore / 添加到 .gitignore)
 BASE_URL=http://localhost:8080
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=secret
-USER_USERNAME=user
-USER_PASSWORD=secret
+ALICE_USERNAME=alice
+ALICE_PASSWORD=secret
 ```
 
-See `docs/configuration.md` for full reference.
+See `docs/configuration.md` for full reference. / 完整参考请参见 `docs/configuration.md`。
 
-## Demo
+---
 
-The `examples/demo-api/` directory contains a complete fictional example:
+## Demo / 示例
 
-- **Employee Management API** with 3 roles (admin, manager, employee)
-- Full permission matrix with 40+ test scenarios
-- Working pytest test code covering all test categories
-- Completely fictional — no real systems referenced
+> **Important / 重要：** The demo in `examples/demo-api/` is a **fictional** example. It demonstrates how the skill generates test code, but it requires a **real target API** to actually run. There is no bundled API server.
+>
+> `examples/demo-api/` 中的示例是一个**虚构**示例。它演示了技能如何生成测试代码，但需要**真实的目标 API** 才能实际运行。没有捆绑的 API 服务器。
 
-See `examples/demo-api/README.md` for details.
+The demo uses a fictional "Employee Management API" with / 示例使用虚构的"员工管理 API"：
 
-## Key Principles
+- 6 test users across 3 roles (admin, manager, employee) / 6个测试用户，3个角色
+- 40+ test scenarios across 7 categories / 40+测试场景，7个类别
+- Complete pytest test code with user-indexed token management / 完整的 pytest 测试代码，按用户名索引令牌
 
-### Reuse-First
+To run the demo tests against your own API / 要针对你自己的 API 运行示例测试：
 
-Before creating any utility, the AI checks if the project already has:
-- HTTP client → reuse it
-- Auth helper → reuse it
-- Test fixtures → reuse them
-- Test data → reuse it
+1. Copy `examples/demo-api/` to your project / 复制 `examples/demo-api/` 到你的项目
+2. Adapt `users.yaml`, `permissions.yaml`, `permission_matrix.yaml` to your API / 适配三个 YAML 文件到你的 API
+3. Set up `.env` with your test credentials / 设置 `.env` 填入测试凭证
+4. Run `pytest tests/test_permission.py -v`
 
-### Non-Interference
+See `examples/demo-api/README.md` for details. / 详情请参见 `examples/demo-api/README.md`。
 
-The skill never:
-- Modifies business code
-- Deletes existing tests
-- Changes API behavior
-- Weakens assertions
+---
 
-### Data-Driven
+## Key Principles / 核心原则
 
-All test data lives in YAML files, never hardcoded in test code. Passwords use environment variables.
+### Reuse-First / 复用优先
 
-## Extending
+Before creating any utility, the AI checks if the project already has / 在创建任何工具之前，AI 检查项目是否已有：
+- HTTP client -> reuse it / HTTP 客户端 -> 复用
+- Auth helper -> reuse it / 认证辅助 -> 复用
+- Test fixtures -> reuse them / 测试固件 -> 复用
+- Test data -> reuse it / 测试数据 -> 复用
 
-### Add a New Permission Model
+### Non-Interference / 非干扰
 
-Add rules in `rules/` and extend Phase 4 of `SKILL.md`.
+The skill never / 本技能绝不：
+- Modifies business code / 修改业务代码
+- Deletes existing tests / 删除现有测试
+- Changes API behavior / 更改 API 行为
+- Weakens assertions / 削弱断言
 
-### Add a New Test Category
+### Data-Driven / 数据驱动
 
-Add rules, then extend Phase 8 (Test Scenario Generation).
+All test data lives in YAML files, never hardcoded in test code. Passwords use environment variables. Tokens are indexed by user name, not role.
 
-### Add a New Technology Template
+所有测试数据存放在 YAML 文件中，绝不在测试代码中硬编码。密码使用环境变量。令牌按用户名索引，而非按角色。
 
-Add templates in `templates/` for your language/framework.
+---
 
-### Custom Report Format
+## Contributing / 贡献
 
-Extend Phase 12 (Security Risk Report) in `SKILL.md`.
+Contributions are welcome / 欢迎贡献：
 
-## Contributing
+1. Fork the repository / Fork 仓库
+2. Create a feature branch / 创建功能分支
+3. Add your changes (new rules, templates, docs, or examples) / 添加你的更改（新规则、模板、文档或示例）
+4. Ensure no real company/system information is included / 确保不包含真实公司/系统信息
+5. Submit a pull request / 提交 Pull Request
 
-Contributions are welcome:
+### Contribution Guidelines / 贡献指南
 
-1. Fork the repository
-2. Create a feature branch
-3. Add your changes (new rules, templates, docs, or examples)
-4. Ensure no real company/system information is included
-5. Submit a pull request
+- Keep the skill technology-agnostic / 保持技能技术无关性
+- Use abstract concepts (User, Role, Resource, Permission) / 使用抽象概念（用户、角色、资源、权限）
+- Put concrete examples only in `examples/` / 仅在 `examples/` 中放置具体示例
+- Never include real credentials, URLs, or system details / 绝不包含真实凭证、URL 或系统详情
 
-### Contribution Guidelines
+---
 
-- Keep the skill technology-agnostic
-- Use abstract concepts (User, Role, Resource, Permission)
-- Put concrete examples only in `examples/`
-- Document new rules with test patterns and severity classifications
-- Never include real credentials, URLs, or system details
+## License / 许可证
 
-## License
-
-MIT License. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](LICENSE). / MIT 许可证。参见 [LICENSE](LICENSE)。

@@ -15,13 +15,15 @@ auth:
 
 users:
   # --- Administrator ---
-  - username: "${ADMIN_USERNAME}"
+  - name: admin_user
+    username: "${ADMIN_USERNAME}"
     password: "${ADMIN_PASSWORD}"
     role: admin
     description: "System administrator with full access"
 
   # --- Manager: Department A (Engineering) ---
-  - username: "${MANAGER_A_USERNAME}"
+  - name: manager_a
+    username: "${MANAGER_A_USERNAME}"
     password: "${MANAGER_A_PASSWORD}"
     role: manager
     department: dept-1
@@ -29,7 +31,8 @@ users:
     description: "Engineering department manager"
 
   # --- Manager: Department B (Marketing) ---
-  - username: "${MANAGER_B_USERNAME}"
+  - name: manager_b
+    username: "${MANAGER_B_USERNAME}"
     password: "${MANAGER_B_PASSWORD}"
     role: manager
     department: dept-2
@@ -37,7 +40,8 @@ users:
     description: "Marketing department manager"
 
   # --- Employee: Alice (Engineering) ---
-  - username: "${EMP_ALICE_USERNAME}"
+  - name: alice
+    username: "${EMP_ALICE_USERNAME}"
     password: "${EMP_ALICE_PASSWORD}"
     role: employee
     department: dept-1
@@ -45,7 +49,8 @@ users:
     description: "Engineer — for self-scope and horizontal tests"
 
   # --- Employee: Bob (Engineering, same dept as Alice) ---
-  - username: "${EMP_BOB_USERNAME}"
+  - name: bob
+    username: "${EMP_BOB_USERNAME}"
     password: "${EMP_BOB_PASSWORD}"
     role: employee
     department: dept-1
@@ -53,7 +58,8 @@ users:
     description: "Engineer — horizontal privilege test target for Alice"
 
   # --- Employee: Charlie (Marketing, different dept) ---
-  - username: "${EMP_CHARLIE_USERNAME}"
+  - name: charlie
+    username: "${EMP_CHARLIE_USERNAME}"
     password: "${EMP_CHARLIE_PASSWORD}"
     role: employee
     department: dept-2
@@ -64,6 +70,7 @@ users:
 # Test Data References
 # =============================================================================
 # These are used in test cases for IDOR and data scope tests.
+# Tests read these values at runtime — no hardcoded IDs in test code.
 
 test_data:
   departments:
@@ -76,15 +83,20 @@ test_data:
     - id: 100
       name: "Manager A"
       department: dept-1
+      user: manager_a
     - id: 101
       name: "Alice"
       department: dept-1
+      user: alice
     - id: 102
       name: "Bob"
       department: dept-1
+      user: bob
     - id: 200
       name: "Manager B"
       department: dept-2
+      user: manager_b
     - id: 201
       name: "Charlie"
       department: dept-2
+      user: charlie
