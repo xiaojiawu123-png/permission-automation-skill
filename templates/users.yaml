@@ -1,0 +1,105 @@
+# users.yaml — Template
+# Copy this file to your project and adapt to your authentication system.
+#
+# IMPORTANT: Replace all placeholder values with your actual configuration.
+# Use environment variables (${VAR}) for passwords and secrets.
+
+# =============================================================================
+# Authentication Configuration
+# =============================================================================
+# Describes how to obtain tokens for test users.
+# Adapt these fields to match your project's login API.
+
+auth:
+  # Login endpoint path (relative to BASE_URL)
+  endpoint: /api/auth/login
+
+  # HTTP method for login
+  method: POST
+
+  # How credentials are sent: json | form | query
+  body_format: json
+
+  # Field names in the login request body
+  username_field: username
+  password_field: password
+
+  # JSON path to extract the token from the login response
+  # Supports dot notation for nested fields
+  token_field: data.token
+
+  # How the token is sent in subsequent requests: header | cookie | query
+  token_transport: header
+
+  # Header configuration (when token_transport is "header")
+  token_header_name: Authorization
+  token_header_prefix: "Bearer"
+
+  # Optional: cookie name (when token_transport is "cookie")
+  # token_cookie_name: session_id
+
+  # Optional: query parameter name (when token_transport is "query")
+  # token_query_param: token
+
+# =============================================================================
+# Test Users
+# =============================================================================
+# Define one user per role. Add additional users for horizontal/cross-user tests.
+#
+# Required fields: username, password, role
+# Optional fields: department, organization, description, extra (any custom fields)
+
+users:
+
+  # --- Example: Administrator ---
+  - username: "${ADMIN_USERNAME}"
+    password: "${ADMIN_PASSWORD}"
+    role: admin
+    description: "System administrator with full access to all resources"
+
+  # --- Example: Manager ---
+  - username: "${MANAGER_USERNAME}"
+    password: "${MANAGER_PASSWORD}"
+    role: manager
+    department: department_a
+    description: "Department manager with department-scoped data access"
+
+  # --- Example: Regular User (User A) ---
+  - username: "${USER_A_USERNAME}"
+    password: "${USER_A_PASSWORD}"
+    role: user
+    department: department_a
+    description: "Regular user in department A (for self-scope tests)"
+
+  # --- Example: Regular User (User B — for cross-user tests) ---
+  - username: "${USER_B_USERNAME}"
+    password: "${USER_B_PASSWORD}"
+    role: user
+    department: department_b
+    description: "Regular user in department B (for horizontal privilege tests)"
+
+# =============================================================================
+# Notes
+# =============================================================================
+#
+# 1. Passwords should use environment variable references (${VAR}), not plain text.
+# 2. Add a .env file (in .gitignore) with actual values:
+#    ADMIN_USERNAME=admin
+#    ADMIN_PASSWORD=secret123
+#    MANAGER_USERNAME=manager
+#    MANAGER_PASSWORD=secret456
+#    USER_A_USERNAME=user_a
+#    USER_A_PASSWORD=secret789
+#    USER_B_USERNAME=user_b
+#    USER_B_PASSWORD=secret012
+#
+# 3. For horizontal privilege tests, you need at least 2 users with the same role
+#    but in different data scopes (different departments, different organizations).
+#
+# 4. The "department" and "organization" fields are used for data scope tests.
+#    Adapt the field names to match your system's data scope attributes.
+#
+# 5. The "extra" field can hold any custom attributes needed for your tests:
+#    extra:
+#      team: team_alpha
+#      clearance_level: 3

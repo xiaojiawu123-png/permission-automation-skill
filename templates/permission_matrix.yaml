@@ -1,0 +1,252 @@
+# permission_matrix.yaml — Template
+# Copy this file to your project and fill in your actual permission matrix.
+#
+# This file is the central input for test generation.
+# Each entry represents one testable permission boundary.
+
+# =============================================================================
+# Permission Matrix
+# =============================================================================
+# Each entry defines: who (role) can/cannot do what (operation) on which API,
+# with what data scope, and what the expected result is.
+
+matrix:
+
+  # ---------------------------------------------------------------------------
+  # Authentication Tests
+  # ---------------------------------------------------------------------------
+  # These apply to ALL protected APIs. One entry per API is sufficient;
+  # the test generator will expand them to all protected endpoints.
+
+  - category: authentication
+    description: "Request without any authentication token"
+    role: null
+    api: "<METHOD> <path>"
+    expected: deny
+    expected_status: 401
+
+  - category: authentication
+    description: "Request with invalid/malformed token"
+    role: null
+    api: "<METHOD> <path>"
+    token_override: "invalid_token_string"
+    expected: deny
+    expected_status: 401
+
+  - category: authentication
+    description: "Request with expired token"
+    role: null
+    api: "<METHOD> <path>"
+    token_override: "<expired_token>"
+    expected: deny
+    expected_status: 401
+
+  # ---------------------------------------------------------------------------
+  # Role Permission Tests (Vertical)
+  # ---------------------------------------------------------------------------
+  # For each role x API combination, define whether it should be allowed or denied.
+
+  # --- Admin (full access) ---
+  - category: role_permission
+    role: admin
+    resource: <resource_name>
+    operation: query
+    api: GET /api/<resources>
+    expected: allow
+    data_scope: all
+
+  - category: role_permission
+    role: admin
+    resource: <resource_name>
+    operation: create
+    api: POST /api/<resources>
+    expected: allow
+
+  - category: role_permission
+    role: admin
+    resource: <resource_name>
+    operation: delete
+    api: DELETE /api/<resources>/{id}
+    expected: allow
+    data_scope: all
+
+  # --- Manager (cannot delete) ---
+  - category: role_permission
+    role: manager
+    resource: <resource_name>
+    operation: query
+    api: GET /api/<resources>
+    expected: allow
+    data_scope: department
+
+  - category: role_permission
+    role: manager
+    resource: <resource_name>
+    operation: delete
+    api: DELETE /api/<resources>/{id}
+    expected: deny
+    expected_status: 403
+
+  # --- Regular User (self-scoped only) ---
+  - category: role_permission
+    role: user
+    resource: <resource_name>
+    operation: self.query
+    api: GET /api/<resources>/{id}
+    expected: allow
+    data_scope: self
+    condition: "id == current_user.id"
+
+  - category: role_permission
+    role: user
+    resource: <resource_name>
+    operation: create
+    api: POST /api/<resources>
+    expected: deny
+    expected_status: 403
+
+  - category: role_permission
+    role: user
+    resource: <resource_name>
+    operation: delete
+    api: DELETE /api/<resources>/{id}
+    expected: deny
+    expected_status: 403
+
+  # ---------------------------------------------------------------------------
+  # Data Permission Tests
+  # ---------------------------------------------------------------------------
+
+  - category: data_permission
+    description: "Manager accesses data from own department"
+    role: manager
+    api: GET /api/<resources>/{id}
+    data_scope: department
+    condition: "resource.department == manager.department"
+    expected: allow
+
+  - category: data_permission
+    description: "Manager accesses data from another department"
+    role: manager
+    api: GET /api/<resources>/{id}
+    data_scope: department
+    condition: "resource.department != manager.department"
+    expected: deny
+    expected_status: 403
+
+  - category: data_permission
+    description: "User accesses own data"
+    role: user
+    api: GET /api/<resources>/{id}
+    data_scope: self
+    condition: "resource.owner == current_user"
+    expected: allow
+
+  - category: data_permission
+    description: "User accesses another user's data"
+    role: user
+    api: GET /api/<resources>/{id}
+    data_scope: self
+    condition: "resource.owner != current_user"
+    expected: deny
+    expected_status: 403
+
+  # ---------------------------------------------------------------------------
+  # Horizontal Privilege Escalation Tests
+  # ---------------------------------------------------------------------------
+
+  - category: horizontal_escalation
+    description: "User A accesses User B's resource by ID"
+    role: user
+    api: GET /api/<resources>/{other_user_resource_id}
+    expected: deny
+    expected_status: 403
+
+  - category: horizontal_escalation
+    description: "User A modifies User B's resource"
+    role: user
+    api: PUT /api/<resources>/{other_user_resource_id}
+    expected: deny
+    expected_status: 403
+
+  # ---------------------------------------------------------------------------
+  # Vertical Privilege Escalation Tests
+  # ---------------------------------------------------------------------------
+
+  - category: vertical_escalation
+    description: "Regular user attempts admin operation"
+    role: user
+    api: DELETE /api/<resources>/{id}
+    expected: deny
+    expected_status: 403
+
+  - category: vertical_escalation
+    description: "Manager attempts admin-only operation"
+    role: manager
+    api: DELETE /api/<resources>/{id}
+    expected: deny
+    expected_status: 403
+
+  # ---------------------------------------------------------------------------
+  # Parameter Tampering Tests
+  # ---------------------------------------------------------------------------
+
+  - category: parameter_tampering
+    description: "Modify ownerId in request body"
+    role: user
+    api: POST /api/<resources>
+    tampered_fields:
+      ownerId: "<another_user_id>"
+    expected: deny
+    expected_status: 403
+
+  - category: parameter_tampering
+    description: "Modify departmentId in request"
+    role: manager
+    api: GET /api/<resources>?departmentId=<other_department>
+    expected: deny
+    expected_status: 403
+
+  - category: parameter_tampering
+    description: "Inject role field in request body"
+    role: user
+    api: PUT /api/users/{self_id}
+    tampered_fields:
+      role: admin
+    expected: deny
+    expected_status: 403
+
+  # ---------------------------------------------------------------------------
+  # Batch Authorization Tests
+  # ---------------------------------------------------------------------------
+
+  - category: batch_authorization
+    description: "Batch request with mix of authorized and unauthorized IDs"
+    role: user
+    api: POST /api/<resources>/batch
+    request_body:
+      ids:
+        - "<own_resource_id>"
+        - "<other_user_resource_id>"
+    expected: deny
+    expected_behavior: "Only authorized IDs should be in response"
+
+# =============================================================================
+# Field Reference
+# =============================================================================
+#
+# category:           Test category (authentication, role_permission, data_permission,
+#                     horizontal_escalation, vertical_escalation, parameter_tampering,
+#                     batch_authorization)
+# description:        Human-readable test description
+# role:               The role being tested (null for authentication tests)
+# resource:           The resource being accessed
+# operation:          The operation being performed
+# api:                The API endpoint (METHOD /path)
+# expected:           "allow" or "deny"
+# expected_status:    Expected HTTP status code (default: 200 for allow, 403 for deny)
+# data_scope:         Data scope constraint (all, department, self, etc.)
+# condition:          Optional condition expression
+# token_override:     Optional: use a specific token instead of the role's token
+# tampered_fields:    Optional: fields to inject/modify in the request
+# request_body:       Optional: custom request body for batch tests

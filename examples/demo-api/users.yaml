@@ -1,0 +1,90 @@
+# users.yaml — Demo: Employee Management API
+#
+# This is a FICTIONAL example. Do not use these credentials in any real system.
+
+auth:
+  endpoint: /api/auth/login
+  method: POST
+  body_format: json
+  username_field: username
+  password_field: password
+  token_field: data.token
+  token_transport: header
+  token_header_name: Authorization
+  token_header_prefix: "Bearer"
+
+users:
+  # --- Administrator ---
+  - username: "${ADMIN_USERNAME}"
+    password: "${ADMIN_PASSWORD}"
+    role: admin
+    description: "System administrator with full access"
+
+  # --- Manager: Department A (Engineering) ---
+  - username: "${MANAGER_A_USERNAME}"
+    password: "${MANAGER_A_PASSWORD}"
+    role: manager
+    department: dept-1
+    employee_id: 100
+    description: "Engineering department manager"
+
+  # --- Manager: Department B (Marketing) ---
+  - username: "${MANAGER_B_USERNAME}"
+    password: "${MANAGER_B_PASSWORD}"
+    role: manager
+    department: dept-2
+    employee_id: 200
+    description: "Marketing department manager"
+
+  # --- Employee: Alice (Engineering) ---
+  - username: "${EMP_ALICE_USERNAME}"
+    password: "${EMP_ALICE_PASSWORD}"
+    role: employee
+    department: dept-1
+    employee_id: 101
+    description: "Engineer — for self-scope and horizontal tests"
+
+  # --- Employee: Bob (Engineering, same dept as Alice) ---
+  - username: "${EMP_BOB_USERNAME}"
+    password: "${EMP_BOB_PASSWORD}"
+    role: employee
+    department: dept-1
+    employee_id: 102
+    description: "Engineer — horizontal privilege test target for Alice"
+
+  # --- Employee: Charlie (Marketing, different dept) ---
+  - username: "${EMP_CHARLIE_USERNAME}"
+    password: "${EMP_CHARLIE_PASSWORD}"
+    role: employee
+    department: dept-2
+    employee_id: 201
+    description: "Marketing employee — cross-department test target"
+
+# =============================================================================
+# Test Data References
+# =============================================================================
+# These are used in test cases for IDOR and data scope tests.
+
+test_data:
+  departments:
+    - id: dept-1
+      name: Engineering
+    - id: dept-2
+      name: Marketing
+
+  employees:
+    - id: 100
+      name: "Manager A"
+      department: dept-1
+    - id: 101
+      name: "Alice"
+      department: dept-1
+    - id: 102
+      name: "Bob"
+      department: dept-1
+    - id: 200
+      name: "Manager B"
+      department: dept-2
+    - id: 201
+      name: "Charlie"
+      department: dept-2

@@ -1,0 +1,132 @@
+# permissions.yaml — Template
+# Copy this file to your project and adapt to your permission model.
+#
+# This file defines the permission model: resources, operations, and role mappings.
+
+# =============================================================================
+# Resources
+# =============================================================================
+# Define all protected resources in your system.
+# A resource is any entity that has permission-controlled operations.
+
+resources:
+
+  - name: <resource_name>
+    description: "<human-readable description>"
+    operations:
+      - query
+      - create
+      - update
+      - delete
+
+  # Add more resources as needed:
+  # - name: order
+  #   description: "Customer orders"
+  #   operations:
+  #     - query
+  #     - create
+  #     - update
+  #     - delete
+  #     - export
+  #     - approve
+
+# =============================================================================
+# Role Definitions
+# =============================================================================
+# Define all roles in the system and their hierarchy (if applicable).
+
+roles:
+
+  - name: admin
+    description: "System administrator with full access"
+    level: 100
+
+  - name: manager
+    description: "Department manager with scoped access"
+    level: 50
+
+  - name: user
+    description: "Regular user with self-scoped access"
+    level: 10
+
+# Optional: define role hierarchy
+# role_hierarchy:
+#   admin > manager > user
+
+# =============================================================================
+# Role-Permission Mapping
+# =============================================================================
+# For each role, list the permissions it has and its data scope.
+
+role_permissions:
+
+  - role: admin
+    permissions:
+      - <resource_name>.query
+      - <resource_name>.create
+      - <resource_name>.update
+      - <resource_name>.delete
+    data_scope: all
+    # "all" means no data filtering — can access all records
+
+  - role: manager
+    permissions:
+      - <resource_name>.query
+      - <resource_name>.create
+      - <resource_name>.update
+    data_scope: department
+    # "department" means can only access records in the same department
+
+  - role: user
+    permissions:
+      - <resource_name>.self.query
+      - <resource_name>.self.update
+    data_scope: self
+    # "self" means can only access own records
+
+# =============================================================================
+# Permission Naming Convention
+# =============================================================================
+#
+# Standard format: <resource>.<operation>
+# Examples:
+#   employee.query
+#   employee.create
+#   employee.update
+#   employee.delete
+#   employee.self.query    (self-scoped variant)
+#   employee.self.update   (self-scoped variant)
+#
+# Adapt the naming convention to match your project's actual permission codes.
+# Common patterns:
+#   - resource:action         (employee:query)
+#   - resource.action         (employee.query)
+#   - RESOURCE_ACTION         (EMPLOYEE_QUERY)
+#   - module:resource:action  (hr:employee:query)
+
+# =============================================================================
+# Data Scope Types
+# =============================================================================
+#
+# all        — No filtering. User can access all records.
+# department — Filter by user's department. User can only access records in their department.
+# org        — Filter by user's organization. User can only access records in their organization.
+# self       — Filter by user's own ID. User can only access their own records.
+# custom     — Custom business logic. Describe the rule in the notes field.
+#
+# If your system uses different scope types, add them here and document the filtering logic.
+
+# =============================================================================
+# Notes
+# =============================================================================
+#
+# 1. This file defines the EXPECTED permission model.
+#    The permission_matrix.yaml defines the testable expectations.
+#
+# 2. Permission codes must match what your system actually uses.
+#    Check your codebase for permission constants, enums, or database records.
+#
+# 3. If your system uses a different permission model (ABAC, policy-based),
+#    adapt this file structure accordingly. The key information needed is:
+#    - Who can do what?
+#    - On which data?

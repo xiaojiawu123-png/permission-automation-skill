@@ -1,0 +1,47 @@
+# permissions.yaml — Demo: Employee Management API
+#
+# This is a FICTIONAL example.
+
+resources:
+  - name: employee
+    description: "Employee records"
+    operations:
+      - query
+      - create
+      - update
+      - delete
+
+roles:
+  - name: admin
+    description: "System administrator"
+    level: 100
+
+  - name: manager
+    description: "Department manager"
+    level: 50
+
+  - name: employee
+    description: "Regular employee"
+    level: 10
+
+role_permissions:
+  - role: admin
+    permissions:
+      - employee.query
+      - employee.create
+      - employee.update
+      - employee.delete
+    data_scope: all
+
+  - role: manager
+    permissions:
+      - employee.query
+      - employee.create
+      - employee.update
+    data_scope: department
+
+  - role: employee
+    permissions:
+      - employee.self.query
+      - employee.self.update
+    data_scope: self

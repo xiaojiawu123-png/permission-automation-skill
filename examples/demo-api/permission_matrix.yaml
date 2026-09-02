@@ -1,0 +1,363 @@
+# permission_matrix.yaml — Demo: Employee Management API
+#
+# This is a FICTIONAL example.
+# Each entry maps to one or more test cases.
+
+matrix:
+
+  # ===========================================================================
+  # Authentication Tests
+  # ===========================================================================
+
+  - category: authentication
+    description: "No token — list employees"
+    api: GET /api/employees
+    expected: deny
+    expected_status: 401
+
+  - category: authentication
+    description: "Invalid token — list employees"
+    api: GET /api/employees
+    token_override: "this_is_not_a_valid_token"
+    expected: deny
+    expected_status: 401
+
+  - category: authentication
+    description: "Expired token — list employees"
+    api: GET /api/employees
+    token_override: "${EXPIRED_TOKEN}"
+    expected: deny
+    expected_status: 401
+
+  - category: authentication
+    description: "No token — get single employee"
+    api: GET /api/employees/101
+    expected: deny
+    expected_status: 401
+
+  - category: authentication
+    description: "No token — create employee"
+    api: POST /api/employees
+    expected: deny
+    expected_status: 401
+
+  - category: authentication
+    description: "No token — delete employee"
+    api: DELETE /api/employees/101
+    expected: deny
+    expected_status: 401
+
+  # ===========================================================================
+  # Role Permission Tests — Admin (positive: should allow all)
+  # ===========================================================================
+
+  - category: role_permission
+    role: admin
+    resource: employee
+    operation: query
+    api: GET /api/employees
+    expected: allow
+
+  - category: role_permission
+    role: admin
+    resource: employee
+    operation: query
+    api: GET /api/employees/101
+    expected: allow
+
+  - category: role_permission
+    role: admin
+    resource: employee
+    operation: create
+    api: POST /api/employees
+    expected: allow
+
+  - category: role_permission
+    role: admin
+    resource: employee
+    operation: update
+    api: PUT /api/employees/101
+    expected: allow
+
+  - category: role_permission
+    role: admin
+    resource: employee
+    operation: delete
+    api: DELETE /api/employees/102
+    expected: allow
+
+  # ===========================================================================
+  # Role Permission Tests — Manager (positive: query, create, update)
+  # ===========================================================================
+
+  - category: role_permission
+    role: manager
+    resource: employee
+    operation: query
+    api: GET /api/employees
+    expected: allow
+    data_scope: department
+
+  - category: role_permission
+    role: manager
+    resource: employee
+    operation: create
+    api: POST /api/employees
+    expected: allow
+
+  - category: role_permission
+    role: manager
+    resource: employee
+    operation: update
+    api: PUT /api/employees/101
+    expected: allow
+    data_scope: department
+
+  # ===========================================================================
+  # Role Permission Tests — Manager (negative: cannot delete)
+  # ===========================================================================
+
+  - category: role_permission
+    role: manager
+    resource: employee
+    operation: delete
+    api: DELETE /api/employees/101
+    expected: deny
+    expected_status: 403
+
+  # ===========================================================================
+  # Role Permission Tests — Employee (negative: cannot create, delete, list)
+  # ===========================================================================
+
+  - category: role_permission
+    role: employee
+    resource: employee
+    operation: query
+    api: GET /api/employees
+    expected: deny
+    expected_status: 403
+
+  - category: role_permission
+    role: employee
+    resource: employee
+    operation: create
+    api: POST /api/employees
+    expected: deny
+    expected_status: 403
+
+  - category: role_permission
+    role: employee
+    resource: employee
+    operation: delete
+    api: DELETE /api/employees/101
+    expected: deny
+    expected_status: 403
+
+  # ===========================================================================
+  # Role Permission Tests — Employee (positive: self query, self update)
+  # ===========================================================================
+
+  - category: role_permission
+    role: employee
+    resource: employee
+    operation: self.query
+    api: GET /api/employees/101
+    expected: allow
+    data_scope: self
+    condition: "employee_id == current_user.employee_id (Alice accessing own record 101)"
+
+  - category: role_permission
+    role: employee
+    resource: employee
+    operation: self.update
+    api: PUT /api/employees/101
+    expected: allow
+    data_scope: self
+    condition: "employee_id == current_user.employee_id (Alice updating own record 101)"
+
+  # ===========================================================================
+  # Data Permission Tests
+  # ===========================================================================
+
+  - category: data_permission
+    description: "Manager A (Engineering) can access Engineering employee"
+    role: manager
+    api: GET /api/employees/101
+    data_scope: department
+    condition: "target.department == manager.department (both dept-1)"
+    expected: allow
+
+  - category: data_permission
+    description: "Manager A (Engineering) CANNOT access Marketing employee"
+    role: manager
+    api: GET /api/employees/201
+    data_scope: department
+    condition: "target.department != manager.department (dept-1 vs dept-2)"
+    expected: deny
+    expected_status: 403
+
+  - category: data_permission
+    description: "Manager A (Engineering) CANNOT list Marketing department employees"
+    role: manager
+    api: GET /api/departments/dept-2/employees
+    data_scope: department
+    expected: deny
+    expected_status: 403
+
+  - category: data_permission
+    description: "Manager B (Marketing) CANNOT access Engineering employee"
+    role: manager
+    api: GET /api/employees/101
+    data_scope: department
+    condition: "target.department != manager.department (dept-2 vs dept-1)"
+    expected: deny
+    expected_status: 403
+
+  # ===========================================================================
+  # Horizontal Privilege Escalation Tests
+  # ===========================================================================
+
+  - category: horizontal_escalation
+    description: "Alice (101) CANNOT access Bob's record (102) — same department"
+    role: employee
+    api: GET /api/employees/102
+    actor: emp_alice (employee_id: 101)
+    target: emp_bob (employee_id: 102)
+    expected: deny
+    expected_status: 403
+
+  - category: horizontal_escalation
+    description: "Alice (101) CANNOT update Bob's record (102)"
+    role: employee
+    api: PUT /api/employees/102
+    actor: emp_alice (employee_id: 101)
+    target: emp_bob (employee_id: 102)
+    expected: deny
+    expected_status: 403
+
+  - category: horizontal_escalation
+    description: "Alice (101) CANNOT access Charlie's record (201) — different department"
+    role: employee
+    api: GET /api/employees/201
+    actor: emp_alice (employee_id: 101)
+    target: emp_charlie (employee_id: 201)
+    expected: deny
+    expected_status: 403
+
+  - category: horizontal_escalation
+    description: "Alice (101) CANNOT delete Bob's record (102)"
+    role: employee
+    api: DELETE /api/employees/102
+    actor: emp_alice (employee_id: 101)
+    target: emp_bob (employee_id: 102)
+    expected: deny
+    expected_status: 403
+
+  # ===========================================================================
+  # Vertical Privilege Escalation Tests
+  # ===========================================================================
+
+  - category: vertical_escalation
+    description: "Employee cannot perform admin delete"
+    role: employee
+    api: DELETE /api/employees/101
+    expected: deny
+    expected_status: 403
+
+  - category: vertical_escalation
+    description: "Manager cannot perform admin delete"
+    role: manager
+    api: DELETE /api/employees/101
+    expected: deny
+    expected_status: 403
+
+  - category: vertical_escalation
+    description: "Employee cannot create new employee (manager+ only)"
+    role: employee
+    api: POST /api/employees
+    expected: deny
+    expected_status: 403
+
+  - category: vertical_escalation
+    description: "Employee cannot list all employees (manager+ only)"
+    role: employee
+    api: GET /api/employees
+    expected: deny
+    expected_status: 403
+
+  # ===========================================================================
+  # Parameter Tampering Tests
+  # ===========================================================================
+
+  - category: parameter_tampering
+    description: "Employee tampers departmentId in self-update"
+    role: employee
+    api: PUT /api/employees/101
+    actor: emp_alice
+    tampered_fields:
+      departmentId: dept-2
+    expected: deny
+    expected_behavior: "departmentId should be ignored or request rejected"
+
+  - category: parameter_tampering
+    description: "Employee tampers role in self-update"
+    role: employee
+    api: PUT /api/employees/101
+    actor: emp_alice
+    tampered_fields:
+      role: admin
+    expected: deny
+    expected_behavior: "role field should be ignored or request rejected"
+
+  - category: parameter_tampering
+    description: "Employee tampers employeeId in create to impersonate"
+    role: employee
+    api: POST /api/employees
+    actor: emp_alice
+    tampered_fields:
+      employeeId: 999
+      role: manager
+    expected: deny
+    expected_behavior: "request should be rejected (employee cannot create)"
+
+  - category: parameter_tampering
+    description: "Manager tampers departmentId to access other department"
+    role: manager
+    api: GET /api/employees?departmentId=dept-2
+    actor: manager_dept_a
+    expected: deny
+    expected_behavior: "should return empty or 403, not dept-2 data"
+
+  # ===========================================================================
+  # Batch Authorization Tests
+  # ===========================================================================
+
+  - category: batch_authorization
+    description: "Employee batch query with own ID + other's ID"
+    role: employee
+    api: POST /api/employees/batch
+    actor: emp_alice (101)
+    request_body:
+      ids: [101, 102]
+    expected: allow
+    expected_behavior: "Only employee 101 data should be returned, not 102"
+
+  - category: batch_authorization
+    description: "Employee batch query with all unauthorized IDs"
+    role: employee
+    api: POST /api/employees/batch
+    actor: emp_alice (101)
+    request_body:
+      ids: [102, 201]
+    expected: deny
+    expected_behavior: "No data should be returned, or 403"
+
+  - category: batch_authorization
+    description: "Manager batch query with own-dept + other-dept IDs"
+    role: manager
+    api: POST /api/employees/batch
+    actor: manager_dept_a (dept-1)
+    request_body:
+      ids: [101, 201]
+    expected: allow
+    expected_behavior: "Only dept-1 employee (101) data should be returned, not dept-2 (201)"
